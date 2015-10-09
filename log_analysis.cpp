@@ -1,4 +1,5 @@
 #include "log_analysis.h"
+#include"lteieeventcommon.h"
 KeywordProc  keyword_proc[]={
 		{"DAY",LogAnalysis::GenerateTimeStamp},
 		{"HOUR",LogAnalysis::GenerateTimeStamp},
@@ -11,8 +12,37 @@ KeywordProc  keyword_proc[]={
 		{"APPEVENT",LogAnalysis::GenerateEvent},
 };
 
-set<KeywordProc> LogAnalysis::keyword_proc_set_(keyword_proc,keyword_proc+sizeof(keyword_proc)/sizeof(KeywordProc));
+EventNameID event_name_id[]={
+		{"FTP_S_APPServiceRequest_Download",FTP_S_APPServiceRequest_Download},
+		{"FTP_S_APPServiceSuccess_Download",FTP_S_APPServiceSuccess_Download},
+		{"FTP_S_APPServiceDrop_Download",FTP_S_APPServiceDrop_Download},
+		{"FTP_S_APPServiceFailure_Download",FTP_S_APPServiceFailure_Download},
+		{"FTP_S_APPServiceRequest_Upload",FTP_S_APPServiceRequest_Upload},
+		{"FTP_S_APPServiceSuccess_Upload",FTP_S_APPServiceSuccess_Upload},
+		{"FTP_S_APPServiceDrop_Upload",FTP_S_APPServiceDrop_Upload},
+		{"FTP_S_APPServiceFailure_Upload",FTP_S_APPServiceFailure_Upload},
+		{"HTTP_S_APPServiceRequest_Browse",HTTP_S_APPServiceRequest_Browse},
+		{"HTTP_S_APPServiceConfirm_Browse",HTTP_S_APPServiceConfirm_Browse},
+		{"HTTP_S_APPServiceSuccess_Browse",HTTP_S_APPServiceSuccess_Browse},
+		{"HTTP_S_APPServiceRequest_Download",HTTP_S_APPServiceRequest_Download},
+		{"HTTP_S_APPServiceSuccess_Download",HTTP_S_APPServiceSuccess_Download},
+		{"HTTP_S_APPServiceDrop_Download",HTTP_S_APPServiceDrop_Download},
+		{"STREAM_S_APPServiceRequest_Stream",STREAM_S_APPServiceRequest_Stream},
+		{"STREAM_S_APPServiceSuccess_Stream",STREAM_S_APPServiceSuccess_Stream},
+		{"STREAM_S_APPServiceConnect_Stream",STREAM_S_APPServiceConnect_Stream},
+		{"STREAM_C_StreamRealPlay_Stream",STREAM_C_StreamRealPlay_Stream},
+		{"STREAM_C_StreamBufferBegin_Stream",STREAM_C_StreamBufferBegin_Stream},
+		{"STREAM_C_StreamBufferEnd_Stream",STREAM_C_StreamBufferEnd_Stream},
+		{"STREAM_C_StreamFileBegin_Stream",STREAM_C_StreamFileBegin_Stream},
+		{"STREAM_C_StreamFileEnd_Stream",STREAM_C_StreamFileEnd_Stream},
+		{"STREAM_S_APPServiceReject_Stream",STREAM_S_APPServiceReject_Stream},
+		{"STREAM_S_APPServiceTimeout_Stream",STREAM_S_APPServiceTimeout_Stream},
+		{"STREAM_S_APPServiceFailure_Stream",STREAM_S_APPServiceFailure_Stream},
+};
 
+
+set<KeywordProc> LogAnalysis::keyword_proc_set_(keyword_proc,keyword_proc+sizeof(keyword_proc)/sizeof(KeywordProc));
+set<EventNameID> LogAnalysis::event_name_id_set_(event_name_id,event_name_id+sizeof(event_name_id)/sizeof(EventNameID));
 LogAnalysis::LogAnalysis():start_analysis_(false)
 {
 
@@ -43,7 +73,7 @@ string LogAnalysis::SplitFirstString(const string& str_source,char sep)
   return (pos==string::npos)?"":str_source.substr(0,pos);
 }
 
-void LogAnalysis::SplitStrings(const string& str_source,char sep,vector<string>& vec)
+void LogAnalysis::SplitStrings(const string& str_source,char sep,vector<string>& vec,bool erase)
 {
   //str_source.pop_back();//删除最后一个字符\n
   size_t begin=0;
@@ -53,7 +83,10 @@ void LogAnalysis::SplitStrings(const string& str_source,char sep,vector<string>&
     begin=end+1;
     end=str_source.find(sep,begin);
   }
-  vec.push_back(str_source.substr(begin,str_source.length()-begin-1));//去除末尾的\n
+  if(erase)
+	  vec.push_back(str_source.substr(begin,str_source.length()-begin-1));//去除末尾的\n
+  else
+	  vec.push_back(str_source.substr(begin));
 }
 
 void LogAnalysis::GenerateTimeStamp(const string& str_time,void * arg/*TimeEnum te*/)
@@ -134,6 +167,40 @@ void LogAnalysis::GenerateIE(const string& ie,void * arg)
 	LogAnalysis * loganalysis=reinterpret_cast<LogAnalysis *>(arg);
 	if(!loganalysis->start_analysis_)
 		return;
+	  vector<string> ie_vec;
+	  SplitStrings(ie,'\t',ie_vec);
+	  int vec_size=ie_vec.size();
+	  if(vec_size>=4){
+		  vector<string> ie_value_vec;
+		  SplitStrings(ie_vec[3],'#',ie_value_vec,false);
+		  vec_size=ie_value_vec.size();
+		  map<int,long long> ie_map;
+		  for(int i=0;i<vec_size;++i)
+		  {
+			  if(ie_value_vec[i].empty())
+				  continue;
+			  long long value=atof(ie_value_vec[i].c_str())*1000;
+			  if(ie_vec[1]=="FTP"){
+			  		  ie_map.insert(std::make_pair(IE_FTP_INFO[i],value));
+			  		 LOG(INFO)<<"FTP "<<i<<" "<<value<<std::endl;
+				}
+			  else if(ie_vec[1]=="HTTP"){
+				  ie_map.insert(std::make_pair(IE_HTTP_INFO[i],value));
+				  LOG(INFO)<<"HTTP "<<i<<" "<<value<<std::endl;
+			  }
+			  else if(ie_vec[1]=="STREAM"){
+				  ie_map.insert(std::make_pair(IE_STREAM_INFO[i],value));
+				  LOG(INFO)<<"STREAM "<<i<<" "<<value<<std::endl;
+			  }
+			  else{
+
+			  }
+
+		  }
+
+		  	//TODO 对IE进行分析
+	  }
+
 }
 
 void LogAnalysis::GenerateEvent(const string& event,void * arg)
@@ -141,6 +208,19 @@ void LogAnalysis::GenerateEvent(const string& event,void * arg)
 	LogAnalysis * loganalysis=reinterpret_cast<LogAnalysis *>(arg);
 	if(!loganalysis->start_analysis_)
 		return;
+	  vector<string> event_vec;
+	  SplitStrings(event,'\t',event_vec);
+	  int vec_size=event_vec.size();
+	  if(vec_size>=5){
+		  EventNameID en;
+		  en.event_name=event_vec[1]+"_"+event_vec[3]+"_"+event_vec[4];
+		//  LOG(INFO)<<en.event_name<<std::endl;
+		  auto pos=event_name_id_set_.find(en);
+		  if(pos!=event_name_id_set_.end()){
+			  int event_id=pos->event_id;
+			  LOG(INFO)<<"Event name: "<<en.event_name<<" Event ID : "<<event_id<<std::endl;
+		  }
+	  }
 }
 
 void LogAnalysis::GenerateIEEvent(const string& ie_event,void *arg)

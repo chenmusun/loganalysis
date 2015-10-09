@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include<stdio.h>
+//#include<stdlib.h>
 #include"log_analysis.h"
 
 INITIALIZE_EASYLOGGINGPP
@@ -14,6 +15,11 @@ int main ()
 	while(fgets(line,1024,file)!=NULL){
 		logana.AnalyseOneLine(line);
 	}
-
+//double d=atof("991.68");
+// long ld=d*1000.0;
+//long long ll=((double)atof("991.68"))*1000;
+//std::cout<<d<<std::endl;
+//std::cout<<ll<<std::endl;
+//std::cout<<ld<<std::endl;
   return 0;
 }

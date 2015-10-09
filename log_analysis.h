@@ -9,6 +9,8 @@
 //增加日志功能
 #define ELPP_THREAD_SAFE
 #include"easylogging++.h"
+//#include"lteieeventcommon.h"
+
 using  std::map;
 using  std::string;
 using  std::vector;
@@ -25,6 +27,26 @@ struct KeywordProc{
 	bool operator==(const KeywordProc &kp) const
 	{
 		return keyword==kp.keyword;
+	}
+};
+
+struct EventNameID{
+	string event_name;
+	int event_id;
+	bool operator<(const EventNameID &en) const
+	{
+		//return event_name<en.event_name;
+		int s1=en.event_name.length();
+		int s2=event_name.length();
+		int min=(s1<s2)?s1:s2;
+		return event_name.compare(0,min,en.event_name,0,min)<0;
+	}
+	bool operator==(const EventNameID &en) const
+	{
+		int s1=en.event_name.length();
+		int s2=event_name.length();
+		int min=(s1<s2)?s1:s2;
+		return !event_name.compare(0,min,en.event_name,0,min);
 	}
 };
 #define DECLARE_DATA_PROC(cmd)   static void Generate##cmd(const string&,void *);
@@ -55,7 +77,7 @@ DECLARE_DATA_PROC(GPS);
 DECLARE_DATA_PROC(StartFlag);
 private:
 static  string SplitFirstString(const string& str_source,char sep);//截取第一个substring
-static  void SplitStrings(const string& str_source,char sep,vector<string>& vec);//截取所有substring
+static  void SplitStrings(const string& str_source,char sep,vector<string>& vec,bool erase=true);//截取所有substring
 
 //DECLARE_DATA_PROC(StartFlag);
 //static  void  GenerateIE(const string& ie_str,map<int,long> & ie_map);//明文IE
@@ -77,4 +99,5 @@ private:
 //  string second_;
 //  int millisecond_;
   static  set<KeywordProc> keyword_proc_set_;
+  static  set<EventNameID> event_name_id_set_;
 };
