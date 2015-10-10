@@ -179,7 +179,7 @@ void LogAnalysis::GenerateIE(const string& ie,void * arg)
 		  {
 			  if(ie_value_vec[i].empty())
 				  continue;
-			  long long value=atof(ie_value_vec[i].c_str())*1000;
+			  long long value=atof(ie_value_vec[i].c_str())*1000+0.5;
 			  if(ie_vec[1]=="FTP"){
 			  		  ie_map.insert(std::make_pair(IE_FTP_INFO[i],value));
 			  		 LOG(INFO)<<"FTP "<<i<<" "<<value<<std::endl;
